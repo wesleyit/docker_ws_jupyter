@@ -8,7 +8,7 @@ mkdir -p "$JUPYTER_DIR"
 
 ## Kill the container if it is already running and start up
 # a new instance, using the 8888 port.
-docker rm -rf ws-jupyter || true 
+docker rm -f ws-jupyter || true 
 docker run -d -it \
     --name ws-jupyter \
     -v "$JUPYTER_DIR/notebooks":/home/jupyter/notebooks \
