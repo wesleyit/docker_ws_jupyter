@@ -11,12 +11,14 @@ RUN apt install python3-dev python3-pip python3-virtualenv \
 ## Install a rich set of libs for analysis using pip
 RUN pip install jupyter jupyter-contrib-nbextensions requests \
     docutils numpy scipy pandas matplotlib seaborn jupyter-tensorboard \
-    graphviz statsmodels scikit-learn tensorflow Keras mxnet tflearn 
+    graphviz statsmodels scikit-learn tensorflow Keras mxnet tflearn \
+		hdf5  
 
 ## The same with pip3
 RUN pip3 install jupyter jupyter-contrib-nbextensions requests \
     docutils numpy scipy pandas matplotlib seaborn jupyter-tensorboard \
-    graphviz statsmodels scikit-learn tensorflow Keras mxnet tflearn 
+    graphviz statsmodels scikit-learn tensorflow Keras mxnet tflearn \
+		hdf5 
 
 ## Add a script to enable extensions and start jupyter
 COPY start_jupyter.sh /usr/local/bin/start_jupyter.sh
