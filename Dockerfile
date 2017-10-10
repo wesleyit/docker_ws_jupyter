@@ -20,12 +20,39 @@ RUN pip3 install jupyter jupyter-contrib-nbextensions requests \
     graphviz statsmodels scikit-learn tensorflow Keras mxnet tflearn \
 		h5py 
 
-## Add a script to enable extensions and start jupyter
-COPY start_jupyter.sh /usr/local/bin/start_jupyter.sh
+## Configure the locales to UTF-8
+RUN apt install locales -y && \
+		echo 'LC_ALL=en_US.UTF-8' > /etc/default/locale && \
+		locale-gen en_US.UTF-8 && \
+		dpkg-reconfigure -f noninteractive locales && \
+		localedef -i en_US -f UTF-8 en_US.UTF-8
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US.UTF-8
+ENV LC_ALL en_US.UTF-8
 
 ## Create an unprivileged user
 RUN useradd -m jupyter -s /bin/bash
 WORKDIR /home/jupyter/
+
+## Add Elixir support and  Compile the kernel as a limited user
+RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb && \
+		dpkg -i erlang-solutions_1.0_all.deb && \
+		apt update && \
+		apt install esl-erlang elixir -y
+RUN git clone https://github.com/pprzetacznik/IElixir.git /opt/ielixir && \
+		chown -R 1000:1000 /opt/ielixir
+USER jupyter
+RUN cd /opt/ielixir && \
+		mix local.hex --force && \
+		mix local.rebar --force && \
+		export PATH=$HOME/.mix:$PATH && \
+		mix deps.get && \
+		mix test && \
+		MIX_ENV=prod mix compile
+USER root
+
+## Add a script to enable extensions and start jupyter
+COPY start_jupyter.sh /usr/local/bin/start_jupyter.sh
 
 ## Add a directory with some files and share it via volume
 RUN mkdir /home/jupyter/notebooks

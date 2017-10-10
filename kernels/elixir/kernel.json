@@ -1,0 +1,9 @@
+{
+    "argv": [
+        "/opt/ielixir/start_script.sh",
+        "{connection_file}"
+    ],
+    "display_name": "Elixir",
+    "language": "Elixir"
+}
+
