@@ -48,7 +48,8 @@ RUN cd /opt/ielixir && \
 		export PATH=$HOME/.mix:$PATH && \
 		mix deps.get && \
 		mix test && \
-		MIX_ENV=prod mix compile
+		MIX_ENV=prod mix compile && \
+		./install_script.sh
 USER root
 
 ## Add a script to enable extensions and start jupyter
@@ -61,8 +62,10 @@ COPY notebooks /home/jupyter/notebooks
 COPY kernels /home/jupyter/kernels
 
 ## Creating the kernels
+RUN mv /home/jupyter/.local/share/jupyter/ /tmp/j
 RUN mkdir -p /home/jupyter/.local/share/jupyter/
 RUN ln -s /home/jupyter/kernels /home/jupyter/.local/share/jupyter/
+RUN cp -r /tmp/j/kernels/* /home/jupyter/.local/share/jupyter/kernels/ && rm -rf /tmp/j
 
 ## Expose the default jupyter port
 EXPOSE 8888
@@ -71,4 +74,5 @@ EXPOSE 8888
 RUN chown -vR 1000:1000 /home/jupyter
 VOLUME /home/jupyter/notebooks
 USER jupyter
+ENV PATH="/home/jupyter/.mix:${PATH}"
 CMD ["bash", "/usr/local/bin/start_jupyter.sh"]
