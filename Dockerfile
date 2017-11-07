@@ -12,13 +12,16 @@ RUN apt install python3-dev python3-pip python3-virtualenv \
 RUN pip install jupyter jupyter-contrib-nbextensions requests \
     docutils numpy scipy pandas matplotlib seaborn jupyter-tensorboard \
     graphviz statsmodels scikit-learn tensorflow Keras mxnet tflearn \
-		h5py
+	h5py bash_kernel
 
 ## The same with pip3
 RUN pip3 install jupyter jupyter-contrib-nbextensions requests \
     docutils numpy scipy pandas matplotlib seaborn jupyter-tensorboard \
     graphviz statsmodels scikit-learn tensorflow Keras mxnet tflearn \
-		h5py 
+	h5py bash_kernel
+
+## Install R-lang for statistics computation
+RUN apt -y install r-base libcurl4-openssl-dev libssl-dev
 
 ## Configure the locales to UTF-8
 RUN apt install locales -y && \
@@ -37,6 +40,7 @@ WORKDIR /home/jupyter/
 ## Add Elixir support and  Compile the kernel as a limited user
 RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb && \
 		dpkg -i erlang-solutions_1.0_all.deb && \
+		rm -rf erlang-solutions_1.0_all.deb && \
 		apt update && \
 		apt install esl-erlang elixir -y
 RUN git clone https://github.com/pprzetacznik/IElixir.git /opt/ielixir && \
@@ -51,6 +55,10 @@ RUN cd /opt/ielixir && \
 		MIX_ENV=prod mix compile && \
 		./install_script.sh
 USER root
+
+## Compile and add the R Kernel to Jupyter
+RUN curl https://gist.githubusercontent.com/wesleyit/58f52659bfef73ea7836bb44d64af389/raw/bda2089637252ceb10b338d09a589ff2848bf2ed/install_iR_to_jupyter.sh | bash 
+RUN chown -R jupyter. /usr/local/lib/R
 
 ## Add a script to enable extensions and start jupyter
 COPY start_jupyter.sh /usr/local/bin/start_jupyter.sh
@@ -76,3 +84,4 @@ VOLUME /home/jupyter/notebooks
 USER jupyter
 ENV PATH="/home/jupyter/.mix:${PATH}"
 CMD ["bash", "/usr/local/bin/start_jupyter.sh"]
+
