@@ -12,16 +12,16 @@ RUN apt install python3-dev python3-pip python3-virtualenv \
 RUN pip install jupyter jupyter-contrib-nbextensions requests \
     docutils numpy scipy pandas matplotlib seaborn jupyter-tensorboard \
     graphviz statsmodels scikit-learn tensorflow Keras mxnet tflearn \
-	h5py bash_kernel
+		h5py bash_kernel imageio pillow
 
 ## The same with pip3
 RUN pip3 install jupyter jupyter-contrib-nbextensions requests \
     docutils numpy scipy pandas matplotlib seaborn jupyter-tensorboard \
     graphviz statsmodels scikit-learn tensorflow Keras mxnet tflearn \
-	h5py bash_kernel
+		h5py bash_kernel imageio pillow
 
 ## Install R-lang for statistics computation
-RUN apt -y install r-base libcurl4-openssl-dev libssl-dev
+RUN apt install r-base libcurl4-openssl-dev libssl-dev -y
 
 ## Configure the locales to UTF-8
 RUN apt install locales -y && \
