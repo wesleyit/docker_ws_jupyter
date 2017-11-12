@@ -1,0 +1,14 @@
+bash-completion
+curl
+git
+less
+libcurl4-openssl-dev
+libssl-dev
+libzmq3-dev
+locales
+nmap
+psmisc
+python-software-properties
+software-properties-common
+vim-nox
+wget

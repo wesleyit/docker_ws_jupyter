@@ -1,87 +1,103 @@
-## Use Debian as base image
-FROM wesleyit/ws-debian-base:stretch
+## Migrating from Debian to Ubuntu because there are
+# many tools (i.e. GO) that have official support
+# and updated repositories for Ubuntu.
+FROM ubuntu:17.10
 
-## Upgrade before install
+## The "MAINTAINER" tag is deprecated :)
+LABEL maintainer="Wesley Rodrigues da Silva <wesley.it@gmail.com>"
+
+## Refreshing the apt package list and updating the system.
 RUN apt update && apt upgrade -y
 
-## Install the base development stack for python 2 and 3
-RUN apt install python3-dev python3-pip python3-virtualenv \
-    python-dev python-pip python-virtualenv -y
+## Installing very basic packages.
+WORKDIR /root
+ADD ./packages-base.txt /root
+RUN apt install -y $(cat packages-base.txt)
 
-## Install a rich set of libs for analysis using pip
-RUN pip install jupyter jupyter-contrib-nbextensions requests \
-    docutils numpy scipy pandas matplotlib seaborn jupyter-tensorboard \
-    graphviz statsmodels scikit-learn tensorflow Keras mxnet tflearn \
-		h5py bash_kernel imageio pillow
-
-## The same with pip3
-RUN pip3 install jupyter jupyter-contrib-nbextensions requests \
-    docutils numpy scipy pandas matplotlib seaborn jupyter-tensorboard \
-    graphviz statsmodels scikit-learn tensorflow Keras mxnet tflearn \
-		h5py bash_kernel imageio pillow
-
-## Install R-lang for statistics computation
-RUN apt install r-base libcurl4-openssl-dev libssl-dev -y
-
-## Configure the locales to UTF-8
-RUN apt install locales -y && \
-		echo 'LC_ALL=en_US.UTF-8' > /etc/default/locale && \
-		locale-gen en_US.UTF-8 && \
-		dpkg-reconfigure -f noninteractive locales && \
-		localedef -i en_US -f UTF-8 en_US.UTF-8
+## Configuring the locales and language settings to UTF-8.
+RUN echo 'LC_ALL=en_US.UTF-8' > /etc/default/locale && \
+    locale-gen en_US.UTF-8 && \
+    dpkg-reconfigure -f noninteractive locales && \
+    localedef -i en_US -f UTF-8 en_US.UTF-8
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
 
-## Create an unprivileged user
-RUN useradd -m jupyter -s /bin/bash
-WORKDIR /home/jupyter/
+## Creating an unprivileged user.
+RUN useradd -m jupyter -s /bin/bash -d /home/jupyter
 
-## Add Elixir support and  Compile the kernel as a limited user
-RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb && \
-		dpkg -i erlang-solutions_1.0_all.deb && \
-		rm -rf erlang-solutions_1.0_all.deb && \
-		apt update && \
-		apt install esl-erlang elixir -y
-RUN git clone https://github.com/pprzetacznik/IElixir.git /opt/ielixir && \
-		chown -R 1000:1000 /opt/ielixir
+## Installing Python2 and Python3 globally.
+ADD ./packages-python.txt /root
+RUN apt install -y $(cat packages-python.txt)
+
+## Installing the Python packages via PIP (for Pythons 2 and 3).
+ADD ./requirements.txt /root
+RUN pip2 install -r requirements.txt
+RUN pip3 install -r requirements.txt
+
+## Installing the R Language globally.
+ADD ./packages-r.txt /root
+RUN apt install -y $(cat packages-r.txt)
+RUN chown -R 1000:1000 /usr/local/lib/R
+
+## Installing GO Language globally.
+RUN add-apt-repository ppa:gophers/archive && apt update
+ADD ./packages-go.txt /root
+RUN apt install -y $(cat packages-go.txt)
+
+## Installing Elixir and Erlang Languages globally.
+ADD ./packages-elixir.txt /root
+RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb
+RUN dpkg -i erlang-solutions_1.0_all.deb && \
+    rm -rf erlang-solutions_1.0_all.deb
+RUN apt update && apt install -y $(cat packages-elixir.txt)
+
+## Configuring the environment using the limited user "jupyter".
 USER jupyter
-RUN cd /opt/ielixir && \
-		mix local.hex --force && \
-		mix local.rebar --force && \
-		export PATH=$HOME/.mix:$PATH && \
-		mix deps.get && \
-		mix test && \
-		MIX_ENV=prod mix compile && \
-		./install_script.sh
-USER root
+WORKDIR /home/jupyter
 
-## Compile and add the R Kernel to Jupyter
-RUN curl https://gist.githubusercontent.com/wesleyit/58f52659bfef73ea7836bb44d64af389/raw/bda2089637252ceb10b338d09a589ff2848bf2ed/install_iR_to_jupyter.sh | bash 
-RUN chown -R jupyter. /usr/local/lib/R
+## Installing IElixir
+ADD setup-elixir.sh /home/jupyter
+ENV PATH /home/jupyter/.mix:${PATH}
+RUN bash setup-elixir.sh
 
-## Add a script to enable extensions and start jupyter
-COPY start_jupyter.sh /usr/local/bin/start_jupyter.sh
+## Configuring GO for the limited user.
+ENV GOROOT /usr/lib/go-1.9
+ENV GOPATH /home/jupyter/.go
+ENV PATH ${GOPATH}/bin:${GOROOT}/bin:${PATH}
 
-## Add a directory with some files and share it via volume
+## Installing the GO Notebook package.
+ADD setup-go.sh /home/jupyter
+RUN bash setup-go.sh
+
+## Installing and configuring the R Notebook package.
+ADD setup-r.sh /home/jupyter
+RUN bash setup-r.sh
+
+## Adding a script to enable extensions and start jupyter.
+ADD start_jupyter.sh /usr/local/bin/start_jupyter.sh
+
+## Adding a directory with some files and share it via volume
 RUN mkdir /home/jupyter/notebooks
-COPY jupyter_notebook_config.py /home/jupyter/jupyter_notebook_config.py
-COPY notebooks /home/jupyter/notebooks
-COPY kernels /home/jupyter/kernels
+ADD jupyter_notebook_config.py /home/jupyter/jupyter_notebook_config.py
+ADD notebooks /home/jupyter/notebooks
+ADD kernels /home/jupyter/kernels
+
+## Fixing all permissions and exporting the volume
+USER root
+RUN chown -R 1000:1000 /home/jupyter
+VOLUME /home/jupyter/notebooks
+USER jupyter
 
 ## Creating the kernels
 RUN mv /home/jupyter/.local/share/jupyter/ /tmp/j
 RUN mkdir -p /home/jupyter/.local/share/jupyter/
 RUN ln -s /home/jupyter/kernels /home/jupyter/.local/share/jupyter/
-RUN cp -r /tmp/j/kernels/* /home/jupyter/.local/share/jupyter/kernels/ && rm -rf /tmp/j
+RUN cp -r /tmp/j/kernels/* /home/jupyter/.local/share/jupyter/kernels/ && \
+    rm -rf /tmp/j
 
-## Expose the default jupyter port
+## Exposing the default jupyter port
 EXPOSE 8888
 
-## Start jupyter notebook using the script and the created user
-RUN chown -vR 1000:1000 /home/jupyter
-VOLUME /home/jupyter/notebooks
-USER jupyter
-ENV PATH="/home/jupyter/.mix:${PATH}"
+## Starting jupyter notebook using the script and the created user.
 CMD ["bash", "/usr/local/bin/start_jupyter.sh"]
-

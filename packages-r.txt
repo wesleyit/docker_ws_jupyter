@@ -1,0 +1,7 @@
+r-base
+r-base-dev
+r-base-html
+r-doc-html
+r-doc-info
+r-mathlib
+r-recommended
