@@ -1,8 +1,13 @@
+awscli
 bash_kernel
+bash-kernel
+bokeh
 docutils
+fastparquet
 graphviz
 h5py
 imageio
+ipywidgets
 jupyter
 jupyter-contrib-nbextensions
 jupyter-tensorboard
@@ -11,7 +16,10 @@ matplotlib
 mxnet
 numpy
 pandas
+pickleshare
 pillow
+psycopg2
+pyarrow
 pygments
 requests
 scikit-learn
