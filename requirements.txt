@@ -18,6 +18,7 @@ numpy
 pandas
 pickleshare
 pillow
+plotly
 psycopg2
 pyarrow
 pygments
